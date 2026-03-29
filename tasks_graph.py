@@ -132,7 +132,7 @@ def main():
     connect_interactions(fig, ax, line, dates, counts)
     zero_dates = [current_date for current_date, count in zip(dates, counts) if count == 0]
     if zero_dates:
-        ax.scatter(zero_dates, [0] * len(zero_dates), s=18, facecolors="none", edgecolors=ZERO_COLOR, linewidths=0.9, alpha=0.8, label="Zero")
+        ax.scatter(zero_dates, [0] * len(zero_dates), s=18, facecolors="none", edgecolors=ZERO_COLOR, linewidths=0.9, alpha=0.8)
     ax.axhline(y=TARGET_COUNT, color="red", linestyle="--", label=f"Target ({TARGET_COUNT})")
     ax.axhline(y=0, color=ZERO_COLOR, linestyle=":", linewidth=0.8, alpha=0.35)
 
