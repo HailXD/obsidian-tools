@@ -35,6 +35,45 @@ def get_task_count(filename):
         return len(TASK_PATTERN.findall(file.read()))
 
 
+def build_series(date_files):
+    counts_by_date = {}
+    for filename in date_files:
+        current_date = date.fromisoformat(filename.split(".md")[0])
+        counts_by_date[current_date] = get_task_count(filename)
+    if not counts_by_date:
+        return [], []
+    dates = []
+    counts = []
+    current_date = min(counts_by_date)
+    end_date = max(counts_by_date)
+    while current_date <= end_date:
+        dates.append(current_date)
+        counts.append(counts_by_date.get(current_date, 0))
+        current_date += timedelta(days=1)
+    return dates, counts
+
+
+def get_zero_marker_dates(dates, counts):
+    zero_dates = []
+    start_index = None
+    for index, count in enumerate(counts):
+        if count == 0:
+            if start_index is None:
+                start_index = index
+            continue
+        if start_index is None:
+            continue
+        zero_dates.append(dates[start_index])
+        if start_index != index - 1:
+            zero_dates.append(dates[index - 1])
+        start_index = None
+    if start_index is not None:
+        zero_dates.append(dates[start_index])
+        if start_index != len(dates) - 1:
+            zero_dates.append(dates[-1])
+    return zero_dates
+
+
 def connect_interactions(fig, ax, line, dates, counts):
     state = {"x": None, "limits": None}
     annotation = ax.annotate(
@@ -136,24 +175,24 @@ def main():
         print("Warning: 'dark_background' style not found. Using default.")
 
     date_files = get_date_files()
-    dates = []
-    counts = []
 
     print(f"Found {len(date_files)} date files.")
 
-    for filename in date_files:
-        dates.append(date.fromisoformat(filename.split(".md")[0]))
-        counts.append(get_task_count(filename))
+    dates, counts = build_series(date_files)
 
     if not dates:
         print("No data to plot.")
         return
 
     fig, ax = plt.subplots(figsize=FIG_SIZE)
-    line, = ax.plot(dates, counts, marker="o", linewidth=2, label="Tasks")
+    line, = ax.plot(dates, counts, linewidth=2, label="Tasks")
     line.set_pickradius(8)
     connect_interactions(fig, ax, line, dates, counts)
-    zero_dates = [current_date for current_date, count in zip(dates, counts) if count == 0]
+    non_zero_dates = [current_date for current_date, count in zip(dates, counts) if count != 0]
+    non_zero_counts = [count for count in counts if count != 0]
+    if non_zero_dates:
+        ax.scatter(non_zero_dates, non_zero_counts, s=18, color=line.get_color(), zorder=4)
+    zero_dates = get_zero_marker_dates(dates, counts)
     if zero_dates:
         ax.scatter(zero_dates, [0] * len(zero_dates), s=18, facecolors="none", edgecolors=ZERO_COLOR, linewidths=0.9, alpha=0.8, zorder=4)
     ax.axhline(y=TARGET_COUNT, color="red", linestyle="--", label=f"Target ({TARGET_COUNT})")
