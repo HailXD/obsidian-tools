@@ -9,7 +9,9 @@ TASK_PATTERN = re.compile(r"^-\s*\[[ xX]?\]", re.MULTILINE)
 TARGET_COUNT = 3
 FIG_SIZE = (14, 7)
 ZOOM_SCALE = 1.2
+PAN_SCALE = 1 / 3
 ZERO_COLOR = "#888888"
+Y_PADDING = 0.25
 
 
 def get_date_files():
@@ -99,11 +101,26 @@ def connect_interactions(fig, ax, line, dates, counts):
         annotation.set_visible(True)
         fig.canvas.draw_idle()
 
+    def on_key(event):
+        if event.key not in {"left", "right"}:
+            return
+        left, right = ax.get_xlim()
+        width = right - left
+        if width <= 0:
+            return
+        delta = width * PAN_SCALE
+        if event.key == "left":
+            ax.set_xlim(left - delta, right - delta)
+        else:
+            ax.set_xlim(left + delta, right + delta)
+        fig.canvas.draw_idle()
+
     fig.canvas.mpl_connect("scroll_event", on_scroll)
     fig.canvas.mpl_connect("button_press_event", on_press)
     fig.canvas.mpl_connect("button_release_event", on_release)
     fig.canvas.mpl_connect("motion_notify_event", on_motion)
     fig.canvas.mpl_connect("motion_notify_event", on_hover)
+    fig.canvas.mpl_connect("key_press_event", on_key)
 
 
 def main():
@@ -132,7 +149,7 @@ def main():
     connect_interactions(fig, ax, line, dates, counts)
     zero_dates = [current_date for current_date, count in zip(dates, counts) if count == 0]
     if zero_dates:
-        ax.scatter(zero_dates, [0] * len(zero_dates), s=18, facecolors="none", edgecolors=ZERO_COLOR, linewidths=0.9, alpha=0.8)
+        ax.scatter(zero_dates, [0] * len(zero_dates), s=18, facecolors="none", edgecolors=ZERO_COLOR, linewidths=0.9, alpha=0.8, zorder=4)
     ax.axhline(y=TARGET_COUNT, color="red", linestyle="--", label=f"Target ({TARGET_COUNT})")
     ax.axhline(y=0, color=ZERO_COLOR, linestyle=":", linewidth=0.8, alpha=0.35)
 
@@ -148,7 +165,7 @@ def main():
     ax.set_title("Number of Tasks per Day")
     ax.set_xlabel("Date")
     ax.set_ylabel("Task Count")
-    ax.set_ylim(bottom=0)
+    ax.set_ylim(bottom=-Y_PADDING)
     ax.set_xlim(dates[0] - timedelta(days=1), dates[-1] + timedelta(days=1))
     ax.grid(True, linestyle=":", alpha=0.6)
     ax.legend()
