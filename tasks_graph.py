@@ -60,23 +60,29 @@ def connect_interactions(fig, ax, line, dates, counts):
         fig.canvas.draw_idle()
 
     def on_press(event):
-        if event.inaxes != ax or event.button != 1 or event.xdata is None:
+        if event.inaxes != ax or event.button != 1 or event.x is None:
             return
-        state["x"] = event.xdata
+        state["x"] = event.x
         state["limits"] = ax.get_xlim()
+        if annotation.get_visible():
+            annotation.set_visible(False)
+            fig.canvas.draw_idle()
 
     def on_release(event):
         state["x"] = None
         state["limits"] = None
 
     def on_motion(event):
-        if state["x"] is None or state["limits"] is None or event.inaxes != ax or event.xdata is None:
+        if state["x"] is None or state["limits"] is None or event.inaxes != ax or event.x is None:
             if annotation.get_visible():
                 annotation.set_visible(False)
                 fig.canvas.draw_idle()
             return
-        delta = state["x"] - event.xdata
+        axis_width = ax.bbox.width
+        if axis_width <= 0:
+            return
         left, right = state["limits"]
+        delta = (state["x"] - event.x) * (right - left) / axis_width
         ax.set_xlim(left + delta, right + delta)
         fig.canvas.draw_idle()
 
