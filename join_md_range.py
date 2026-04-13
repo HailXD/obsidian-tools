@@ -1,7 +1,7 @@
 from datetime import date, timedelta
 from pathlib import Path
 
-START_DATE = date(2026, 3, 29)
+START_DATE = date(2026, 3, 31)
 END_DATE = date(2026, 5, 1)
 OUTPUT_FILE = Path("2026-03-29_to_2026-05-01.txt")
 SEPARATOR = "\n===\n"
